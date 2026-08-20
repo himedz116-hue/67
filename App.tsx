@@ -35,15 +35,43 @@ export default function App() {
 
     try {
       const apiUrl = `https://kick.com/api/v2/channels/${name}`;
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
       
-      const response = await fetch(proxyUrl);
-      if (!response.ok) throw new Error('فشل في الاتصال بالخادم.');
-      
-      const rawData = await response.json();
-      if (!rawData.contents) throw new Error('لم يتم استرجاع بيانات صحيحة.');
-      
-      const data = JSON.parse(rawData.contents);
+      // مصفوفة من البروكسيات لتسريع البحث وتجنب الحظر
+      const proxies = [
+        `/api/kick?endpoint=${encodeURIComponent(apiUrl)}`, // Vercel API (الأسرع والأفضل)
+        `https://api.cors.lol/?url=${encodeURIComponent(apiUrl)}`,
+        `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`
+      ];
+
+      let rawData = null;
+      let data = null;
+
+      // محاولة الاتصال بأسرع بروكسي متاح
+      for (const proxy of proxies) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 ثواني كحد أقصى للانتظار
+          
+          const response = await fetch(proxy, { signal: controller.signal });
+          clearTimeout(timeoutId);
+
+          if (!response.ok) continue;
+
+          rawData = await response.json();
+          
+          if (proxy.includes('allorigins')) {
+             if (rawData.contents) data = JSON.parse(rawData.contents);
+          } else {
+             data = rawData;
+          }
+
+          if (data) break; // نجحنا في جلب البيانات
+        } catch (e) {
+          continue; // فشل هذا البروكسي، جرب الذي يليه
+        }
+      }
+
+      if (!data) throw new Error('فشل في الاتصال بخوادم Kick. المحاولة لاحقاً.');
 
       if (data.message && data.message.includes('not found')) {
         throw new Error('القناة غير موجودة أو الاسم غير صحيح.');
