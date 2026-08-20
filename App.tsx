@@ -141,8 +141,8 @@ const parseEmotes = (text: string) => {
 };
 
 // ===== الألوان الافتراضية =====
-const DEFAULT_C1 = '#53fc18';
-const DEFAULT_C2 = '#00d26a';
+const DEFAULT_C1 = '#09d598';
+const DEFAULT_C2 = '#06a575';
 
 export default function App() {
   const [streamerName, setStreamerName] = useState('');
@@ -355,13 +355,13 @@ export default function App() {
               style={{ background: `linear-gradient(to right, ${c1}, ${c2})` }}
             />
             <div 
-              className="relative w-28 h-28 flex items-center justify-center bg-black border-4 rounded-full animate-[bounce_4s_infinite] transition-all duration-1000"
+              className="relative w-32 h-32 flex items-center justify-center bg-black/60 backdrop-blur-md border-4 rounded-full animate-[bounce_4s_infinite] transition-all duration-1000 overflow-hidden"
               style={{ 
                 borderColor: c1, 
-                boxShadow: `0 0 20px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.6)` 
+                boxShadow: `0 0 25px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.6)` 
               }}
             >
-              <span className="text-6xl">🟢</span>
+              <img src="/2.png" alt="Logo" className="w-full h-full object-contain p-2 drop-shadow-lg" />
             </div>
           </div>
           <h1 
