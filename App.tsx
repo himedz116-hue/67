@@ -444,11 +444,14 @@ export default function App() {
         <div className="flex justify-center mb-10 animate-[fade-in-up_0.5s_ease-out]">
           <button 
             onClick={() => setDataSaverMode(!dataSaverMode)}
-            className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-bold transition-all duration-500 border backdrop-blur-md ${dataSaverMode ? 'bg-red-500/10 text-red-400 border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]' : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10'}`}
+            className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold transition-all duration-500 border backdrop-blur-md text-sm md:text-base ${dataSaverMode ? 'bg-red-500/10 text-red-400 border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]' : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10'}`}
           >
-            <span className="text-2xl">{dataSaverMode ? '🛑' : '🔋'}</span>
-            <span className="tracking-wide">
-              {dataSaverMode ? 'وضع التوفير مُفعّل (يتم إيقاف الشات والخلفيات)' : 'تفعيل وضع توفير البيانات'}
+            <span className="text-xl">{dataSaverMode ? '🛑' : '🔋'}</span>
+            <span className="hidden sm:inline">
+              {dataSaverMode ? 'وضع التوفير مُفعّل (إيقاف الشات والخلفيات)' : 'تفعيل وضع توفير البيانات'}
+            </span>
+            <span className="sm:hidden">
+              {dataSaverMode ? 'التوفير مُفعّل' : 'وضع التوفير'}
             </span>
           </button>
         </div>
@@ -459,14 +462,14 @@ export default function App() {
           </div>
         )}
 
-        {/* 8 مميزات في الصفحة الرئيسية - تختفي عند عرض بيانات الستريمر */}
+        {/* 8 مميزات */}
         {!streamerInfo && !loading && !error && (
           <div className="mb-16 animate-[fade-in-up_0.6s_ease-out]">
             <div className="text-center mb-10">
               <h2 className="text-2xl md:text-3xl font-black text-white/90 mb-2">لماذا تستخدم بوابتنا؟</h2>
               <div className="h-1 w-20 mx-auto rounded-full transition-all duration-1000" style={{ background: `linear-gradient(to right, ${c1}, ${c2})` }}></div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 max-w-5xl mx-auto">
               {[
                 { icon: '🔴', title: 'بث مباشر', desc: 'شاهد أي ستريمر مباشرةً بجودة عالية بدون تأخير' },
                 { icon: '💬', title: 'شات حي', desc: 'شاهد رسائل الشات مباشرة مع دعم الإيموجيات والستيكرات' },
@@ -479,27 +482,24 @@ export default function App() {
               ].map((feature, i) => (
                 <div 
                   key={i}
-                  className="group relative bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl p-5 hover:-translate-y-2 transition-all duration-500 cursor-default overflow-hidden"
+                  className="group relative bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl p-4 md:p-5 hover:-translate-y-2 transition-all duration-500 cursor-default overflow-hidden"
                   style={{ animationDelay: `${i * 0.1}s` }}
                 >
-                  {/* توهج خلفي عند Hover */}
                   <div 
                     className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"
                     style={{ background: `radial-gradient(circle at center, rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.08), transparent 70%)` }}
                   />
-                  {/* خط لامع يتحرك */}
                   <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12"></div>
                   
                   <div className="relative z-10">
-                    <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">{feature.icon}</div>
+                    <div className="text-3xl md:text-4xl mb-2 md:mb-3 group-hover:scale-110 transition-transform duration-300">{feature.icon}</div>
                     
-                    {/* تأثير التدرج اللوني القديم بشكل صحيح (بدون مشكلة المربع الأخضر) */}
                     <div className="relative mb-1">
-                      <h3 className="font-black text-white text-base transition-opacity duration-500 group-hover:opacity-0 relative z-10">
+                      <h3 className="font-black text-white text-sm md:text-base transition-opacity duration-500 group-hover:opacity-0 relative z-10">
                         {feature.title}
                       </h3>
                       <h3 
-                        className="font-black text-base absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-20"
+                        className="font-black text-sm md:text-base absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-20"
                         style={{ 
                           backgroundImage: `linear-gradient(to right, ${c1}, ${c2})`,
                           WebkitBackgroundClip: 'text',
@@ -511,10 +511,9 @@ export default function App() {
                       </h3>
                     </div>
                     
-                    <p className="text-white/40 text-xs leading-relaxed group-hover:text-white/60 transition-colors duration-500">{feature.desc}</p>
+                    <p className="text-white/40 text-[10px] md:text-xs leading-relaxed group-hover:text-white/60 transition-colors duration-500">{feature.desc}</p>
                   </div>
 
-                  {/* حدود متوهجة عند hover */}
                   <div 
                     className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                     style={{ boxShadow: `inset 0 0 0 1px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.3), 0 0 15px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.1)` }}
@@ -528,7 +527,7 @@ export default function App() {
         {/* معلومات الاستريمر */}
         {streamerInfo && (
           <div 
-            className="relative bg-[#0a0a0a] border border-white/10 p-6 md:p-8 rounded-3xl flex flex-wrap items-center gap-8 mb-10 transform transition-all duration-700 animate-[fade-in-up_0.5s_ease-out] overflow-hidden"
+            className="relative bg-[#0a0a0a] border border-white/10 p-5 md:p-8 rounded-3xl mb-10 transform transition-all duration-700 animate-[fade-in-up_0.5s_ease-out] overflow-hidden"
             style={{ 
               boxShadow: `0 8px 32px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.15)`
             }}
@@ -552,75 +551,79 @@ export default function App() {
               />
             )}
             
-            {/* طبقة تظليل لضمان وضوح النص مع إبقاء البانر مرئي */}
+            {/* طبقة تظليل */}
             <div className="absolute inset-0 z-0 bg-gradient-to-r from-black/90 via-black/40 to-black/90"></div>
             <div className="absolute inset-0 z-0 bg-gradient-to-t from-black/80 via-transparent to-black/40"></div>
 
-            <div className="relative z-10">
-              <div 
-                className="absolute inset-0 rounded-full blur-lg opacity-60 transition-all duration-1000"
-                style={{ background: `linear-gradient(to top right, ${c1}, ${c2})` }}
-              />
-              <img 
-                src={streamerInfo.user?.profile_pic || 'https://kick.com/favicon.ico'} 
-                alt="Avatar" 
-                className="relative w-28 h-28 md:w-36 md:h-36 rounded-full border-4 border-[#050505] object-cover"
-              />
-            </div>
-            
-            <div className="flex-1 min-w-[250px] relative z-10">
-              <h2 className="text-3xl md:text-4xl font-black mb-3 text-white drop-shadow-md">
-                {streamerInfo.user?.username}
-              </h2>
-              <div className="flex flex-wrap items-center gap-3 mb-4 text-sm font-bold">
-                {streamerInfo.livestream ? (
-                  <span className="bg-red-600/20 text-red-500 border border-red-500/50 px-4 py-1.5 rounded-full flex items-center gap-2 shadow-[0_0_10px_rgba(255,0,0,0.3)] animate-pulse">
-                    <div className="w-2 h-2 rounded-full bg-red-500"></div> يبث الآن
-                  </span>
-                ) : (
-                  <span className="bg-gray-800/50 text-gray-400 border border-gray-600 px-4 py-1.5 rounded-full">
-                    ⚫ غير متصل (Offline)
-                  </span>
-                )}
-                <span 
-                  className="bg-white/5 px-4 py-1.5 rounded-full transition-all duration-1000"
-                  style={{ 
-                    borderWidth: '1px', borderStyle: 'solid',
-                    borderColor: `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.3)`,
-                    color: c1,
-                    boxShadow: `0 0 10px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.1)` 
-                  }}
-                >
-                  👥 {(streamerInfo.followersCount || streamerInfo.followers_count || 0).toLocaleString()} متابع
-                </span>
-                
-                {/* زر المشاركة */}
-                <button 
-                  onClick={() => {
-                    navigator.clipboard.writeText(window.location.href);
-                    alert('تم نسخ رابط القناة بنجاح! 🔗');
-                  }}
-                  className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-4 py-1.5 rounded-full hover:bg-blue-500/20 hover:scale-105 transition-all flex items-center gap-2"
-                >
-                  🔗 مشاركة
-                </button>
-              </div>
-              <p className="text-gray-300 text-sm md:text-base leading-relaxed max-w-2xl bg-black/50 p-4 rounded-xl border border-white/5">
-                {streamerInfo.user?.bio || 'لا يوجد وصف (بايو)'}
-              </p>
-              
-              {streamerInfo.livestream && (
+            {/* المحتوى - عمودي على الجوال، أفقي على الكمبيوتر */}
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-5 md:gap-8">
+              {/* صورة البروفايل */}
+              <div className="relative shrink-0">
                 <div 
-                  className="mt-4 inline-block px-4 py-2 rounded-l-lg font-bold text-sm transition-all duration-1000"
-                  style={{ 
-                    background: `linear-gradient(to left, transparent, rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.1))`,
-                    borderRight: `4px solid ${c1}`,
-                    color: c1
-                  }}
-                >
-                  {streamerInfo.livestream.session_title}
+                  className="absolute inset-0 rounded-full blur-lg opacity-60 transition-all duration-1000"
+                  style={{ background: `linear-gradient(to top right, ${c1}, ${c2})` }}
+                />
+                <img 
+                  src={streamerInfo.user?.profile_pic || 'https://kick.com/favicon.ico'} 
+                  alt="Avatar" 
+                  className="relative w-24 h-24 md:w-36 md:h-36 rounded-full border-4 border-[#050505] object-cover"
+                />
+              </div>
+              
+              {/* المعلومات */}
+              <div className="flex-1 text-center md:text-right w-full">
+                <h2 className="text-2xl md:text-4xl font-black mb-3 text-white drop-shadow-md">
+                  {streamerInfo.user?.username}
+                </h2>
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-3 mb-4 text-xs md:text-sm font-bold">
+                  {streamerInfo.livestream ? (
+                    <span className="bg-red-600/20 text-red-500 border border-red-500/50 px-3 md:px-4 py-1.5 rounded-full flex items-center gap-2 shadow-[0_0_10px_rgba(255,0,0,0.3)] animate-pulse">
+                      <div className="w-2 h-2 rounded-full bg-red-500"></div> يبث الآن
+                    </span>
+                  ) : (
+                    <span className="bg-gray-800/50 text-gray-400 border border-gray-600 px-3 md:px-4 py-1.5 rounded-full">
+                      ⚫ غير متصل
+                    </span>
+                  )}
+                  <span 
+                    className="bg-white/5 px-3 md:px-4 py-1.5 rounded-full transition-all duration-1000"
+                    style={{ 
+                      borderWidth: '1px', borderStyle: 'solid',
+                      borderColor: `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.3)`,
+                      color: c1,
+                      boxShadow: `0 0 10px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.1)` 
+                    }}
+                  >
+                    👥 {(streamerInfo.followersCount || streamerInfo.followers_count || 0).toLocaleString()} متابع
+                  </span>
+                  
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href);
+                      alert('تم نسخ رابط القناة بنجاح! 🔗');
+                    }}
+                    className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-3 md:px-4 py-1.5 rounded-full hover:bg-blue-500/20 hover:scale-105 transition-all flex items-center gap-1"
+                  >
+                    🔗 مشاركة
+                  </button>
                 </div>
-              )}
+                <p className="text-gray-300 text-xs md:text-base leading-relaxed bg-black/50 p-3 md:p-4 rounded-xl border border-white/5">
+                  {streamerInfo.user?.bio || 'لا يوجد وصف (بايو)'}
+                </p>
+                
+                {streamerInfo.livestream && (
+                  <div 
+                    className="mt-3 md:mt-4 inline-block px-3 md:px-4 py-2 rounded-l-lg font-bold text-xs md:text-sm transition-all duration-1000"
+                    style={{ 
+                      background: `linear-gradient(to left, transparent, rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.1))`,
+                      borderRight: `4px solid ${c1}`,
+                      color: c1
+                    }}
+                  >
+                    {streamerInfo.livestream.session_title}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
