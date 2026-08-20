@@ -492,10 +492,25 @@ export default function App() {
                   
                   <div className="relative z-10">
                     <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">{feature.icon}</div>
-                    {/* تم إصلاح مشكلة لون الخلفية المزعج في العناوين */}
-                    <h3 className="font-black text-white text-base mb-1 transition-colors duration-500 group-hover:text-[#09d598]">
-                      {feature.title}
-                    </h3>
+                    
+                    {/* تأثير التدرج اللوني القديم بشكل صحيح (بدون مشكلة المربع الأخضر) */}
+                    <div className="relative mb-1">
+                      <h3 className="font-black text-white text-base transition-opacity duration-500 group-hover:opacity-0 relative z-10">
+                        {feature.title}
+                      </h3>
+                      <h3 
+                        className="font-black text-base absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-20"
+                        style={{ 
+                          backgroundImage: `linear-gradient(to right, ${c1}, ${c2})`,
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          color: 'transparent'
+                        }}
+                      >
+                        {feature.title}
+                      </h3>
+                    </div>
+                    
                     <p className="text-white/40 text-xs leading-relaxed group-hover:text-white/60 transition-colors duration-500">{feature.desc}</p>
                   </div>
 
