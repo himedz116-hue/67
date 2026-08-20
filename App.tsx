@@ -158,7 +158,13 @@ export default function App() {
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+      // إذا كان المستخدم قريب من الأسفل، انزل للأسفل تلقائياً
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
+      
+      if (isNearBottom || chatMessages.length < 10) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      }
     }
   };
 
@@ -582,7 +588,7 @@ export default function App() {
               </div>
               
               {/* الرسائل */}
-              <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 relative z-10 scrollbar-hide min-w-0" style={{ scrollBehavior: 'smooth' }}>
+              <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 relative z-10 scrollbar-hide min-w-0">
                 {chatMessages.length === 0 ? (
                   <div 
                     className="flex-1 flex items-center justify-center text-sm font-bold animate-pulse transition-all duration-1000"
