@@ -152,9 +152,26 @@ export default function App() {
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [c1, setC1] = useState(DEFAULT_C1); // اللون الرئيسي
   const [c2, setC2] = useState(DEFAULT_C2); // اللون الثانوي
+  const [dataSaverMode, setDataSaverMode] = useState(false); // وضع توفير البيانات
   
   const pusherRef = useRef<Pusher | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // إدارة اتصال الشات بناءً على وضع التوفير
+  useEffect(() => {
+    if (streamerInfo?.livestream && streamerInfo.chatroom?.id) {
+      if (dataSaverMode) {
+        if (pusherRef.current) {
+          pusherRef.current.disconnect();
+          pusherRef.current = null;
+        }
+      } else {
+        if (!pusherRef.current) {
+          connectChat(streamerInfo.chatroom.id);
+        }
+      }
+    }
+  }, [dataSaverMode, streamerInfo]);
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
@@ -282,10 +299,6 @@ export default function App() {
       }
 
       setStreamerInfo(data);
-
-      if (data.livestream && data.chatroom?.id) {
-        connectChat(data.chatroom.id);
-      }
     } catch (err: any) {
       setError(err.message || 'حدث خطأ أثناء البحث');
     } finally {
@@ -343,15 +356,19 @@ export default function App() {
       />
       <div className="fixed inset-0 z-0 bg-gradient-to-b from-[#050505]/80 via-[#050505]/95 to-[#050505]"></div>
       
-      {/* أضواء متوهجة ديناميكية */}
-      <div 
-        className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full blur-[150px] animate-pulse pointer-events-none z-0 transition-all duration-1000" 
-        style={{ backgroundColor: `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.12)` }}
-      />
-      <div 
-        className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[150px] animate-pulse pointer-events-none z-0 transition-all duration-1000" 
-        style={{ backgroundColor: `rgba(${rgb2.r}, ${rgb2.g}, ${rgb2.b}, 0.12)`, animationDelay: '2s' }}
-      />
+      {/* أضواء متوهجة ديناميكية - تختفي في وضع التوفير */}
+      {!dataSaverMode && (
+        <>
+          <div 
+            className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full blur-[150px] animate-pulse pointer-events-none z-0 transition-all duration-1000" 
+            style={{ backgroundColor: `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.12)` }}
+          />
+          <div 
+            className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[150px] animate-pulse pointer-events-none z-0 transition-all duration-1000" 
+            style={{ backgroundColor: `rgba(${rgb2.r}, ${rgb2.g}, ${rgb2.b}, 0.12)`, animationDelay: '2s' }}
+          />
+        </>
+      )}
 
       <div className="max-w-7xl mx-auto relative z-10">
         
@@ -408,6 +425,19 @@ export default function App() {
             }}
           >
             {loading ? 'جاري البحث... ⏳' : 'بحث 🚀'}
+          </button>
+        </div>
+
+        {/* زر وضع توفير البيانات */}
+        <div className="flex justify-center mb-10 animate-[fade-in-up_0.5s_ease-out]">
+          <button 
+            onClick={() => setDataSaverMode(!dataSaverMode)}
+            className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-bold transition-all duration-500 border backdrop-blur-md ${dataSaverMode ? 'bg-red-500/10 text-red-400 border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]' : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10'}`}
+          >
+            <span className="text-2xl">{dataSaverMode ? '🛑' : '🔋'}</span>
+            <span className="tracking-wide">
+              {dataSaverMode ? 'وضع التوفير مُفعّل (يتم إيقاف الشات والخلفيات)' : 'تفعيل وضع توفير البيانات'}
+            </span>
           </button>
         </div>
         
@@ -559,7 +589,7 @@ export default function App() {
             
             {/* البث المباشر */}
             <div 
-              className="flex-[3] bg-black rounded-3xl overflow-hidden border border-white/10 relative group transition-all duration-1000"
+              className={`${dataSaverMode ? 'w-full' : 'flex-[3]'} bg-black rounded-3xl overflow-hidden border border-white/10 relative group transition-all duration-1000`}
               style={{ boxShadow: `0 0 30px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.08)` }}
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
@@ -570,8 +600,9 @@ export default function App() {
               ></iframe>
             </div>
             
-            {/* الشات */}
-            <div className="flex-[1] bg-black/70 backdrop-blur-2xl rounded-3xl flex flex-col border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden relative min-w-0">
+            {/* الشات (يختفي في وضع التوفير) */}
+            {!dataSaverMode && (
+              <div className="flex-[1] bg-black/70 backdrop-blur-2xl rounded-3xl flex flex-col border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden relative min-w-0">
               {/* هيدر الشات */}
               <div 
                 className="p-4 text-center font-black border-b border-white/10 tracking-widest uppercase relative z-10 shadow-md transition-all duration-1000 shrink-0"
@@ -626,9 +657,29 @@ export default function App() {
                 style={{ background: `linear-gradient(to right, transparent, rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.4), transparent)` }}
               />
             </div>
-
+            )}
           </div>
         )}
+
+        {/* الفوتر - معلومات الاستهلاك */}
+        <div className="mt-16 pt-8 pb-4 text-center">
+          <div className="inline-flex flex-wrap justify-center gap-4 text-sm font-bold bg-black/40 backdrop-blur-md p-5 rounded-2xl border border-white/5 shadow-lg">
+            <div className="flex items-center gap-2 text-white/70">
+              <span className="text-xl">📡</span>
+              سرعة الإنترنت المطلوبة: <span className="text-[#09d598]">5 Mbps+</span>
+            </div>
+            <div className="w-px h-5 bg-white/20 hidden md:block mt-1"></div>
+            <div className="flex items-center gap-2 text-white/70">
+              <span className="text-xl">📊</span>
+              الاستهلاك العادي: <span className="text-orange-400">~15 MB/دقيقة</span>
+            </div>
+            <div className="w-px h-5 bg-white/20 hidden md:block mt-1"></div>
+            <div className="flex items-center gap-2 text-white/70">
+              <span className="text-xl">⚡</span>
+              وضع التوفير: <span className="text-green-400">يوفر بيانات كبيرة بإيقاف الشات والخلفيات</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <style>{`
