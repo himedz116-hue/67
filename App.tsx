@@ -1,7 +1,122 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Pusher from 'pusher-js';
 
-// دالة لتحويل كود الإيموجي في الشات إلى صورة حقيقية
+// ===== نظام استخراج الألوان من الصور =====
+const extractColorsFromImage = (imgUrl: string): Promise<[string, string]> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve(['#53fc18', '#00d26a']); return; }
+        
+        canvas.width = 50;
+        canvas.height = 50;
+        ctx.drawImage(img, 0, 0, 50, 50);
+        const imageData = ctx.getImageData(0, 0, 50, 50).data;
+        
+        // تجميع الألوان مع تجاهل الألوان القريبة من الأسود والأبيض والرمادي
+        const colorBuckets: Record<string, { r: number, g: number, b: number, count: number }> = {};
+        
+        for (let i = 0; i < imageData.length; i += 4) {
+          const r = imageData[i];
+          const g = imageData[i + 1];
+          const b = imageData[i + 2];
+          
+          // تجاهل الألوان الداكنة جداً أو الفاتحة جداً أو الرمادية
+          const brightness = (r + g + b) / 3;
+          if (brightness < 30 || brightness > 230) continue;
+          const maxC = Math.max(r, g, b);
+          const minC = Math.min(r, g, b);
+          if (maxC - minC < 25) continue; // تجاهل الرمادي
+          
+          // تقريب الألوان لتجميعها في مجموعات
+          const key = `${Math.round(r / 20) * 20}-${Math.round(g / 20) * 20}-${Math.round(b / 20) * 20}`;
+          if (!colorBuckets[key]) {
+            colorBuckets[key] = { r: 0, g: 0, b: 0, count: 0 };
+          }
+          colorBuckets[key].r += r;
+          colorBuckets[key].g += g;
+          colorBuckets[key].b += b;
+          colorBuckets[key].count++;
+        }
+        
+        // ترتيب حسب الأكثر تكراراً
+        const sorted = Object.values(colorBuckets)
+          .filter(c => c.count > 3)
+          .sort((a, b) => b.count - a.count);
+        
+        if (sorted.length === 0) { resolve(['#53fc18', '#00d26a']); return; }
+        
+        const primary = sorted[0];
+        const pR = Math.round(primary.r / primary.count);
+        const pG = Math.round(primary.g / primary.count);
+        const pB = Math.round(primary.b / primary.count);
+        const primaryHex = rgbToHex(pR, pG, pB);
+        
+        // اللون الثاني: أبعد لون عن اللون الأول
+        let secondaryHex = lightenColor(primaryHex, 30);
+        if (sorted.length > 1) {
+          let maxDist = 0;
+          let bestIdx = 1;
+          for (let j = 1; j < Math.min(sorted.length, 10); j++) {
+            const s = sorted[j];
+            const sR = Math.round(s.r / s.count);
+            const sG = Math.round(s.g / s.count);
+            const sB = Math.round(s.b / s.count);
+            const dist = Math.sqrt((pR - sR) ** 2 + (pG - sG) ** 2 + (pB - sB) ** 2);
+            if (dist > maxDist) { maxDist = dist; bestIdx = j; }
+          }
+          const sec = sorted[bestIdx];
+          secondaryHex = rgbToHex(
+            Math.round(sec.r / sec.count),
+            Math.round(sec.g / sec.count),
+            Math.round(sec.b / sec.count)
+          );
+        }
+        
+        resolve([saturateColor(primaryHex), saturateColor(secondaryHex)]);
+      } catch (e) {
+        resolve(['#53fc18', '#00d26a']);
+      }
+    };
+    img.onerror = () => resolve(['#53fc18', '#00d26a']);
+    img.src = imgUrl;
+  });
+};
+
+const rgbToHex = (r: number, g: number, b: number) => 
+  '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+
+const lightenColor = (hex: string, amount: number): string => {
+  const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + amount);
+  const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + amount);
+  const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + amount);
+  return rgbToHex(r, g, b);
+};
+
+const saturateColor = (hex: string): string => {
+  let r = parseInt(hex.slice(1, 3), 16);
+  let g = parseInt(hex.slice(3, 5), 16);
+  let b = parseInt(hex.slice(5, 7), 16);
+  const max = Math.max(r, g, b);
+  if (max === 0) return hex;
+  const factor = Math.min(255 / max, 1.4);
+  r = Math.min(255, Math.round(r * factor));
+  g = Math.min(255, Math.round(g * factor));
+  b = Math.min(255, Math.round(b * factor));
+  return rgbToHex(r, g, b);
+};
+
+const hexToRgb = (hex: string) => ({
+  r: parseInt(hex.slice(1, 3), 16),
+  g: parseInt(hex.slice(3, 5), 16),
+  b: parseInt(hex.slice(5, 7), 16)
+});
+
+// ===== دالة لتحويل كود الإيموجي في الشات إلى صورة حقيقية =====
 const parseEmotes = (text: string) => {
   if (!text) return null;
   const parts = text.split(/(\[emote:\d+:[a-zA-Z0-9_]+\])/g);
@@ -25,12 +140,18 @@ const parseEmotes = (text: string) => {
   });
 };
 
+// ===== الألوان الافتراضية =====
+const DEFAULT_C1 = '#53fc18';
+const DEFAULT_C2 = '#00d26a';
+
 export default function App() {
   const [streamerName, setStreamerName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [streamerInfo, setStreamerInfo] = useState<any>(null);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [c1, setC1] = useState(DEFAULT_C1); // اللون الرئيسي
+  const [c2, setC2] = useState(DEFAULT_C2); // اللون الثانوي
   
   const pusherRef = useRef<Pusher | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -43,6 +164,51 @@ export default function App() {
     scrollToBottom();
   }, [chatMessages]);
 
+  // استخراج الألوان عند تحميل بيانات الاستريمر
+  useEffect(() => {
+    if (!streamerInfo) {
+      setC1(DEFAULT_C1);
+      setC2(DEFAULT_C2);
+      return;
+    }
+    
+    const avatarUrl = streamerInfo.user?.profile_pic;
+    const bannerUrl = streamerInfo.banner_image?.url || streamerInfo.banner?.url || streamerInfo.banner_image;
+    
+    const extractAll = async () => {
+      const results: [string, string][] = [];
+      
+      // حاول من البانر أولاً (لأنه أوضح)
+      if (bannerUrl && typeof bannerUrl === 'string') {
+        try {
+          const bannerColors = await extractColorsFromImage(bannerUrl);
+          results.push(bannerColors);
+        } catch (e) {}
+      }
+      
+      // ثم من صورة البروفايل
+      if (avatarUrl) {
+        try {
+          const avatarColors = await extractColorsFromImage(avatarUrl);
+          results.push(avatarColors);
+        } catch (e) {}
+      }
+      
+      if (results.length > 0) {
+        // لو عندنا ألوان من البانر والأفاتار، خذ الأول من البانر والثاني من الأفاتار
+        if (results.length >= 2) {
+          setC1(results[0][0]); // اللون الرئيسي من البانر
+          setC2(results[1][0]); // اللون الثانوي من الأفاتار
+        } else {
+          setC1(results[0][0]);
+          setC2(results[0][1]);
+        }
+      }
+    };
+    
+    extractAll();
+  }, [streamerInfo]);
+
   const searchStreamer = async () => {
     const name = streamerName.trim().toLowerCase();
     if (!name) return;
@@ -51,6 +217,8 @@ export default function App() {
     setError('');
     setStreamerInfo(null);
     setChatMessages([]);
+    setC1(DEFAULT_C1);
+    setC2(DEFAULT_C2);
 
     if (pusherRef.current) {
       pusherRef.current.disconnect();
@@ -151,33 +319,55 @@ export default function App() {
     };
   }, []);
 
+  // حساب الـ RGB لاستخدامه في الشفافيات
+  const rgb1 = hexToRgb(c1);
+  const rgb2 = hexToRgb(c2);
+
   return (
-    <div className="min-h-screen text-white font-sans p-5 relative overflow-hidden" dir="rtl" style={{ background: '#050505' }}>
-      {/* خلفية داكنة مع شبكة خفيفة */}
+    <div className="min-h-screen text-white font-sans p-5 relative overflow-hidden" dir="rtl" style={{ background: '#050505', transition: 'all 1s ease' }}>
+      {/* خلفية شبكة ديناميكية */}
       <div 
-        className="fixed inset-0 z-0 opacity-10" 
+        className="fixed inset-0 z-0 opacity-10 transition-all duration-1000" 
         style={{ 
-          backgroundImage: 'linear-gradient(#53fc18 1px, transparent 1px), linear-gradient(90deg, #53fc18 1px, transparent 1px)',
+          backgroundImage: `linear-gradient(${c1} 1px, transparent 1px), linear-gradient(90deg, ${c1} 1px, transparent 1px)`,
           backgroundSize: '50px 50px' 
         }}
       />
       <div className="fixed inset-0 z-0 bg-gradient-to-b from-[#050505]/80 via-[#050505]/95 to-[#050505]"></div>
       
-      {/* أضواء خضراء متوهجة متحركة في الخلفية */}
-      <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#53fc18]/10 rounded-full blur-[150px] animate-pulse pointer-events-none z-0"></div>
-      <div className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#00d26a]/10 rounded-full blur-[150px] animate-pulse pointer-events-none z-0" style={{ animationDelay: '2s' }}></div>
+      {/* أضواء متوهجة ديناميكية */}
+      <div 
+        className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full blur-[150px] animate-pulse pointer-events-none z-0 transition-all duration-1000" 
+        style={{ backgroundColor: `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.12)` }}
+      />
+      <div 
+        className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[150px] animate-pulse pointer-events-none z-0 transition-all duration-1000" 
+        style={{ backgroundColor: `rgba(${rgb2.r}, ${rgb2.g}, ${rgb2.b}, 0.12)`, animationDelay: '2s' }}
+      />
 
       <div className="max-w-7xl mx-auto relative z-10">
         
         {/* الهيدر */}
         <div className="text-center mb-10 mt-8">
           <div className="inline-block relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-[#53fc18] to-[#00d26a] blur-xl opacity-40 group-hover:opacity-80 transition duration-700 rounded-full"></div>
-            <div className="relative w-28 h-28 flex items-center justify-center bg-black border-4 border-[#53fc18] rounded-full drop-shadow-[0_0_20px_rgba(83,252,24,0.6)] animate-[bounce_4s_infinite]">
+            <div 
+              className="absolute inset-0 blur-xl opacity-40 group-hover:opacity-80 transition duration-700 rounded-full"
+              style={{ background: `linear-gradient(to right, ${c1}, ${c2})` }}
+            />
+            <div 
+              className="relative w-28 h-28 flex items-center justify-center bg-black border-4 rounded-full animate-[bounce_4s_infinite] transition-all duration-1000"
+              style={{ 
+                borderColor: c1, 
+                boxShadow: `0 0 20px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.6)` 
+              }}
+            >
               <span className="text-6xl">🟢</span>
             </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black mt-8 mb-2 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[#53fc18] via-[#00d26a] to-[#53fc18] animate-pulse">
+          <h1 
+            className="text-4xl md:text-5xl font-black mt-8 mb-2 tracking-tight bg-clip-text text-transparent animate-pulse transition-all duration-1000"
+            style={{ backgroundImage: `linear-gradient(to right, ${c1}, ${c2}, ${c1})` }}
+          >
             بوابة البث المباشر
           </h1>
           <p className="text-gray-400 font-medium text-lg">تجربة مشاهدة خرافية لأي ستريمر على منصة Kick</p>
@@ -186,10 +376,14 @@ export default function App() {
         {/* صندوق البحث */}
         <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
           <div className="relative group w-full sm:w-[400px]">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#53fc18] to-[#00d26a] rounded-xl blur opacity-30 group-hover:opacity-70 transition duration-500"></div>
+            <div 
+              className="absolute -inset-0.5 rounded-xl blur opacity-30 group-hover:opacity-70 transition duration-500"
+              style={{ background: `linear-gradient(to right, ${c1}, ${c2})` }}
+            />
             <input
               type="text"
-              className="relative w-full px-5 py-4 rounded-xl border border-white/10 bg-black/80 backdrop-blur-md text-white focus:outline-none focus:border-[#53fc18] transition-colors text-lg"
+              className="relative w-full px-5 py-4 rounded-xl border border-white/10 bg-black/80 backdrop-blur-md text-white focus:outline-none transition-colors text-lg"
+              style={{ ['--tw-ring-color' as any]: c1 }}
               placeholder="أدخل اسم القناة (مثال: xqc)"
               value={streamerName}
               onChange={(e) => setStreamerName(e.target.value)}
@@ -199,7 +393,11 @@ export default function App() {
           <button
             onClick={searchStreamer}
             disabled={loading}
-            className="relative px-8 py-4 bg-gradient-to-r from-[#53fc18] to-[#00d26a] text-black font-black text-lg rounded-xl hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 shadow-[0_0_25px_rgba(83,252,24,0.5)]"
+            className="relative px-8 py-4 text-black font-black text-lg rounded-xl hover:scale-105 transition-all duration-500 disabled:opacity-50 disabled:hover:scale-100"
+            style={{ 
+              background: `linear-gradient(to right, ${c1}, ${c2})`,
+              boxShadow: `0 0 25px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.5)` 
+            }}
           >
             {loading ? 'جاري البحث... ⏳' : 'بحث 🚀'}
           </button>
@@ -213,9 +411,15 @@ export default function App() {
 
         {/* معلومات الاستريمر */}
         {streamerInfo && (
-          <div className="bg-black/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-3xl flex flex-wrap items-center gap-8 mb-10 shadow-[0_8px_32px_rgba(83,252,24,0.05)] transform transition-all duration-700 animate-[fade-in-up_0.5s_ease-out]">
+          <div 
+            className="bg-black/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-3xl flex flex-wrap items-center gap-8 mb-10 transform transition-all duration-700 animate-[fade-in-up_0.5s_ease-out]"
+            style={{ boxShadow: `0 8px 32px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.08)` }}
+          >
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-tr from-[#53fc18] to-[#00d26a] rounded-full blur-lg opacity-60"></div>
+              <div 
+                className="absolute inset-0 rounded-full blur-lg opacity-60 transition-all duration-1000"
+                style={{ background: `linear-gradient(to top right, ${c1}, ${c2})` }}
+              />
               <img 
                 src={streamerInfo.user?.profile_pic || 'https://kick.com/favicon.ico'} 
                 alt="Avatar" 
@@ -237,7 +441,15 @@ export default function App() {
                     ⚫ غير متصل (Offline)
                   </span>
                 )}
-                <span className="bg-white/5 border border-[#53fc18]/30 px-4 py-1.5 rounded-full text-[#53fc18] shadow-[0_0_10px_rgba(83,252,24,0.1)]">
+                <span 
+                  className="bg-white/5 px-4 py-1.5 rounded-full transition-all duration-1000"
+                  style={{ 
+                    borderWidth: '1px', borderStyle: 'solid',
+                    borderColor: `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.3)`,
+                    color: c1,
+                    boxShadow: `0 0 10px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.1)` 
+                  }}
+                >
                   👥 {(streamerInfo.followersCount || streamerInfo.followers_count || 0).toLocaleString()} متابع
                 </span>
               </div>
@@ -246,7 +458,14 @@ export default function App() {
               </p>
               
               {streamerInfo.livestream && (
-                <div className="mt-4 inline-block bg-gradient-to-r from-[#53fc18]/10 to-transparent border-r-4 border-[#53fc18] px-4 py-2 rounded-l-lg text-[#53fc18] font-bold text-sm">
+                <div 
+                  className="mt-4 inline-block px-4 py-2 rounded-l-lg font-bold text-sm transition-all duration-1000"
+                  style={{ 
+                    background: `linear-gradient(to left, transparent, rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.1))`,
+                    borderRight: `4px solid ${c1}`,
+                    color: c1
+                  }}
+                >
                   {streamerInfo.livestream.session_title}
                 </div>
               )}
@@ -259,7 +478,10 @@ export default function App() {
           <div className="flex flex-col lg:flex-row gap-6 h-[70vh] min-h-[500px] mb-10 animate-[fade-in-up_0.8s_ease-out]">
             
             {/* البث المباشر */}
-            <div className="flex-[3] bg-black rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_30px_rgba(83,252,24,0.08)] relative group">
+            <div 
+              className="flex-[3] bg-black rounded-3xl overflow-hidden border border-white/10 relative group transition-all duration-1000"
+              style={{ boxShadow: `0 0 30px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.08)` }}
+            >
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
               <iframe
                 src={`https://player.kick.com/${streamerInfo.user?.username}?autoplay=true`}
@@ -268,29 +490,43 @@ export default function App() {
               ></iframe>
             </div>
             
-            {/* الشات الخرافي */}
+            {/* الشات */}
             <div className="flex-[1] bg-black/70 backdrop-blur-2xl rounded-3xl flex flex-col border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden relative">
               {/* هيدر الشات */}
-              <div className="bg-gradient-to-r from-black via-[#0a1a0f] to-black p-4 text-center font-black border-b border-white/10 text-[#53fc18] tracking-widest uppercase relative z-10 shadow-md">
+              <div 
+                className="p-4 text-center font-black border-b border-white/10 tracking-widest uppercase relative z-10 shadow-md transition-all duration-1000"
+                style={{ 
+                  background: `linear-gradient(to right, #000, rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.08), #000)`,
+                  color: c1
+                }}
+              >
                 الشات المباشر 💬
-                <div className="absolute bottom-0 left-0 h-[1px] w-full bg-gradient-to-r from-transparent via-[#53fc18]/50 to-transparent"></div>
+                <div 
+                  className="absolute bottom-0 left-0 h-[1px] w-full transition-all duration-1000"
+                  style={{ background: `linear-gradient(to right, transparent, rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.5), transparent)` }}
+                />
               </div>
               
               {/* الرسائل */}
               <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 relative z-10 scrollbar-hide">
                 {chatMessages.length === 0 ? (
-                  <div className="flex-1 flex items-center justify-center text-[#53fc18]/30 text-sm font-bold animate-pulse">
+                  <div 
+                    className="flex-1 flex items-center justify-center text-sm font-bold animate-pulse transition-all duration-1000"
+                    style={{ color: `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.3)` }}
+                  >
                     في انتظار الرسائل...
                   </div>
                 ) : (
                   chatMessages.map((msg) => (
                     <div 
                       key={msg.id} 
-                      className="text-[15px] break-words bg-white/5 hover:bg-[#53fc18]/5 p-3 rounded-2xl border border-white/5 transition-colors animate-[slide-in-right_0.3s_ease-out]"
+                      className="text-[15px] break-words bg-white/5 p-3 rounded-2xl border border-white/5 transition-colors animate-[slide-in-right_0.3s_ease-out]"
+                      onMouseEnter={(e) => (e.currentTarget.style.background = `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.05)`)}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
                     >
                       <span 
                         className="font-black drop-shadow-md text-[16px]" 
-                        style={{ color: msg.sender?.identity?.color || '#53fc18' }}
+                        style={{ color: msg.sender?.identity?.color || c1 }}
                       >
                         {msg.sender?.username}
                       </span>
@@ -305,7 +541,10 @@ export default function App() {
               </div>
               
               {/* زينة أسفل الشات */}
-              <div className="h-2 w-full bg-gradient-to-r from-transparent via-[#53fc18]/40 to-transparent"></div>
+              <div 
+                className="h-2 w-full transition-all duration-1000"
+                style={{ background: `linear-gradient(to right, transparent, rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.4), transparent)` }}
+              />
             </div>
 
           </div>
@@ -321,7 +560,6 @@ export default function App() {
           0% { opacity: 0; transform: translateX(20px); }
           100% { opacity: 1; transform: translateX(0); }
         }
-        /* Hide scrollbar for a cleaner look */
         .scrollbar-hide::-webkit-scrollbar {
             display: none;
         }
