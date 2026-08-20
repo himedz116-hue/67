@@ -234,9 +234,21 @@ export default function App() {
     extractAll();
   }, [streamerInfo]);
 
-  const searchStreamer = async () => {
-    const name = streamerName.trim().toLowerCase();
+  // تشغيل البحث إذا كان هناك اسم قناة في الرابط عند تحميل الموقع
+  useEffect(() => {
+    const pathName = window.location.pathname.replace('/', '').trim();
+    if (pathName) {
+      setStreamerName(pathName);
+      searchStreamer(pathName);
+    }
+  }, []);
+
+  const searchStreamer = async (nameToSearch?: string) => {
+    const name = (typeof nameToSearch === 'string' ? nameToSearch : streamerName).trim().toLowerCase();
     if (!name) return;
+
+    // تحديث الرابط في المتصفح لسهولة المشاركة
+    window.history.pushState(null, '', `/${name}`);
 
     setLoading(true);
     setError('');
@@ -447,7 +459,7 @@ export default function App() {
           </div>
         )}
 
-        {/* 7 مميزات في الصفحة الرئيسية - تختفي عند عرض بيانات الستريمر */}
+        {/* 8 مميزات في الصفحة الرئيسية - تختفي عند عرض بيانات الستريمر */}
         {!streamerInfo && !loading && !error && (
           <div className="mb-16 animate-[fade-in-up_0.6s_ease-out]">
             <div className="text-center mb-10">
@@ -463,6 +475,7 @@ export default function App() {
                 { icon: '👤', title: 'معلومات كاملة', desc: 'عدد المتابعين، البايو، حالة البث، وعنوان الستريم' },
                 { icon: '📱', title: 'تصميم متجاوب', desc: 'يعمل بشكل مثالي على الكمبيوتر والجوال والتابلت' },
                 { icon: '🔒', title: 'بدون تسجيل', desc: 'لا حاجة لحساب أو تسجيل دخول. ابحث وشاهد فوراً' },
+                { icon: '🔋', title: 'وضع التوفير', desc: 'نظام ذكي يقلل استهلاك الإنترنت بإيقاف الشات والخلفيات' },
               ].map((feature, i) => (
                 <div 
                   key={i}
@@ -479,7 +492,10 @@ export default function App() {
                   
                   <div className="relative z-10">
                     <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">{feature.icon}</div>
-                    <h3 className="font-black text-white text-base mb-1 transition-colors duration-500 group-hover:text-transparent group-hover:bg-clip-text" style={{ backgroundImage: `linear-gradient(to right, ${c1}, ${c2})` }}>{feature.title}</h3>
+                    {/* تم إصلاح مشكلة لون الخلفية المزعج في العناوين */}
+                    <h3 className="font-black text-white text-base mb-1 transition-colors duration-500 group-hover:text-[#09d598]">
+                      {feature.title}
+                    </h3>
                     <p className="text-white/40 text-xs leading-relaxed group-hover:text-white/60 transition-colors duration-500">{feature.desc}</p>
                   </div>
 
@@ -562,6 +578,17 @@ export default function App() {
                 >
                   👥 {(streamerInfo.followersCount || streamerInfo.followers_count || 0).toLocaleString()} متابع
                 </span>
+                
+                {/* زر المشاركة */}
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(window.location.href);
+                    alert('تم نسخ رابط القناة بنجاح! 🔗');
+                  }}
+                  className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-4 py-1.5 rounded-full hover:bg-blue-500/20 hover:scale-105 transition-all flex items-center gap-2"
+                >
+                  🔗 مشاركة
+                </button>
               </div>
               <p className="text-gray-300 text-sm md:text-base leading-relaxed max-w-2xl bg-black/50 p-4 rounded-xl border border-white/5">
                 {streamerInfo.user?.bio || 'لا يوجد وصف (بايو)'}
