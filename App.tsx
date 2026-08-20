@@ -38,6 +38,7 @@ export default function App() {
       
       const proxies = [
         `/api/kick?endpoint=${encodeURIComponent(apiUrl)}`, // Vercel API
+        `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`,
         `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`,
         `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(apiUrl)}`
       ];
@@ -76,7 +77,7 @@ export default function App() {
       try {
         data = await Promise.any(proxies.map(p => fetchProxy(p)));
       } catch (e) {
-        throw new Error('فشل في الاتصال بخوادم Kick (ربما بسبب الحماية). المحاولة لاحقاً.');
+        throw new Error('فشل في الاتصال بخوادم Kick (نظام حماية Cloudflare). جرب مرة أخرى أو تأكد من Vercel.');
       }
 
       if (data.message && data.message.includes('not found')) {
@@ -178,7 +179,7 @@ export default function App() {
                 ) : (
                   <span className="bg-gray-600 text-white px-3 py-1 rounded-md font-bold">⚫ غير متصل (Offline)</span>
                 )}
-                <span className="text-gray-300">👥 المتابعون: <strong className="text-white">{streamerInfo.followersCount?.toLocaleString()}</strong></span>
+                <span className="text-gray-300">👥 المتابعون: <strong className="text-white">{(streamerInfo.followersCount || streamerInfo.followers_count || 0).toLocaleString()}</strong></span>
               </div>
               <p className="text-gray-400 text-sm line-clamp-2">{streamerInfo.user?.bio || 'لا يوجد وصف (بايو)'}</p>
               
