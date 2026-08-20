@@ -461,25 +461,33 @@ export default function App() {
         {/* معلومات الاستريمر */}
         {streamerInfo && (
           <div 
-            className="relative bg-black/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-3xl flex flex-wrap items-center gap-8 mb-10 transform transition-all duration-700 animate-[fade-in-up_0.5s_ease-out] overflow-hidden"
+            className="relative bg-[#0a0a0a] border border-white/10 p-6 md:p-8 rounded-3xl flex flex-wrap items-center gap-8 mb-10 transform transition-all duration-700 animate-[fade-in-up_0.5s_ease-out] overflow-hidden"
             style={{ 
               boxShadow: `0 8px 32px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.15)`
             }}
           >
             {/* صورة البانر في الخلفية */}
-            {(streamerInfo.banner_image?.url || streamerInfo.banner?.url || (typeof streamerInfo.banner_image === 'string' ? streamerInfo.banner_image : null)) && (
+            {(streamerInfo.banner_image?.url || streamerInfo.banner?.url || (typeof streamerInfo.banner_image === 'string' ? streamerInfo.banner_image : null)) ? (
               <div 
-                className="absolute inset-0 z-0 opacity-40 mix-blend-overlay transition-all duration-1000"
+                className="absolute inset-0 z-0 opacity-40 transition-all duration-1000"
                 style={{
-                  backgroundImage: `linear-gradient(to right, #000 10%, transparent 50%, #000 90%), url(${streamerInfo.banner_image?.url || streamerInfo.banner?.url || streamerInfo.banner_image})`,
+                  backgroundImage: `url(${streamerInfo.banner_image?.url || streamerInfo.banner?.url || streamerInfo.banner_image})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                 }}
               />
+            ) : (
+              <div 
+                className="absolute inset-0 z-0 opacity-10 transition-all duration-1000"
+                style={{
+                  background: `linear-gradient(45deg, ${c1}, ${c2})`,
+                }}
+              />
             )}
             
-            {/* طبقة تظليل إضافية لضمان وضوح النص */}
-            <div className="absolute inset-0 z-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+            {/* طبقة تظليل لضمان وضوح النص مع إبقاء البانر مرئي */}
+            <div className="absolute inset-0 z-0 bg-gradient-to-r from-black/90 via-black/40 to-black/90"></div>
+            <div className="absolute inset-0 z-0 bg-gradient-to-t from-black/80 via-transparent to-black/40"></div>
 
             <div className="relative z-10">
               <div 
