@@ -409,6 +409,53 @@ export default function App() {
           </div>
         )}
 
+        {/* 7 مميزات في الصفحة الرئيسية - تختفي عند عرض بيانات الستريمر */}
+        {!streamerInfo && !loading && !error && (
+          <div className="mb-16 animate-[fade-in-up_0.6s_ease-out]">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl md:text-3xl font-black text-white/90 mb-2">لماذا تستخدم بوابتنا؟</h2>
+              <div className="h-1 w-20 mx-auto rounded-full transition-all duration-1000" style={{ background: `linear-gradient(to right, ${c1}, ${c2})` }}></div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+              {[
+                { icon: '🔴', title: 'بث مباشر', desc: 'شاهد أي ستريمر مباشرةً بجودة عالية بدون تأخير' },
+                { icon: '💬', title: 'شات حي', desc: 'شاهد رسائل الشات مباشرة مع دعم الإيموجيات والستيكرات' },
+                { icon: '🎨', title: 'ألوان ذكية', desc: 'الموقع يتلون تلقائياً بألوان صورة وبانر الستريمر' },
+                { icon: '⚡', title: 'سرعة خارقة', desc: 'نظام بروكسي متوازي يجلب البيانات بلمح البصر' },
+                { icon: '👤', title: 'معلومات كاملة', desc: 'عدد المتابعين، البايو، حالة البث، وعنوان الستريم' },
+                { icon: '📱', title: 'تصميم متجاوب', desc: 'يعمل بشكل مثالي على الكمبيوتر والجوال والتابلت' },
+                { icon: '🔒', title: 'بدون تسجيل', desc: 'لا حاجة لحساب أو تسجيل دخول. ابحث وشاهد فوراً' },
+              ].map((feature, i) => (
+                <div 
+                  key={i}
+                  className="group relative bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl p-5 hover:-translate-y-2 transition-all duration-500 cursor-default overflow-hidden"
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                >
+                  {/* توهج خلفي عند Hover */}
+                  <div 
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"
+                    style={{ background: `radial-gradient(circle at center, rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.08), transparent 70%)` }}
+                  />
+                  {/* خط لامع يتحرك */}
+                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12"></div>
+                  
+                  <div className="relative z-10">
+                    <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">{feature.icon}</div>
+                    <h3 className="font-black text-white text-base mb-1 transition-colors duration-500 group-hover:text-transparent group-hover:bg-clip-text" style={{ backgroundImage: `linear-gradient(to right, ${c1}, ${c2})` }}>{feature.title}</h3>
+                    <p className="text-white/40 text-xs leading-relaxed group-hover:text-white/60 transition-colors duration-500">{feature.desc}</p>
+                  </div>
+
+                  {/* حدود متوهجة عند hover */}
+                  <div 
+                    className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                    style={{ boxShadow: `inset 0 0 0 1px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.3), 0 0 15px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.1)` }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* معلومات الاستريمر */}
         {streamerInfo && (
           <div 
@@ -491,10 +538,10 @@ export default function App() {
             </div>
             
             {/* الشات */}
-            <div className="flex-[1] bg-black/70 backdrop-blur-2xl rounded-3xl flex flex-col border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden relative">
+            <div className="flex-[1] bg-black/70 backdrop-blur-2xl rounded-3xl flex flex-col border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden relative min-w-0">
               {/* هيدر الشات */}
               <div 
-                className="p-4 text-center font-black border-b border-white/10 tracking-widest uppercase relative z-10 shadow-md transition-all duration-1000"
+                className="p-4 text-center font-black border-b border-white/10 tracking-widest uppercase relative z-10 shadow-md transition-all duration-1000 shrink-0"
                 style={{ 
                   background: `linear-gradient(to right, #000, rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.08), #000)`,
                   color: c1
@@ -508,7 +555,7 @@ export default function App() {
               </div>
               
               {/* الرسائل */}
-              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 relative z-10 scrollbar-hide">
+              <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 relative z-10 scrollbar-hide min-w-0">
                 {chatMessages.length === 0 ? (
                   <div 
                     className="flex-1 flex items-center justify-center text-sm font-bold animate-pulse transition-all duration-1000"
@@ -520,18 +567,19 @@ export default function App() {
                   chatMessages.map((msg) => (
                     <div 
                       key={msg.id} 
-                      className="text-[15px] break-words bg-white/5 p-3 rounded-2xl border border-white/5 transition-colors animate-[slide-in-right_0.3s_ease-out]"
+                      className="text-[14px] bg-white/5 p-3 rounded-2xl border border-white/5 transition-colors animate-[slide-in-right_0.3s_ease-out] min-w-0"
+                      style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.05)`)}
                       onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
                     >
                       <span 
-                        className="font-black drop-shadow-md text-[16px]" 
+                        className="font-black drop-shadow-md text-[15px]" 
                         style={{ color: msg.sender?.identity?.color || c1 }}
                       >
                         {msg.sender?.username}
                       </span>
                       <span className="text-white/30 mx-1">:</span>
-                      <span className="text-white/90 leading-relaxed inline-block">
+                      <span className="text-white/90 leading-relaxed" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                         {parseEmotes(msg.content)}
                       </span>
                     </div>
@@ -542,7 +590,7 @@ export default function App() {
               
               {/* زينة أسفل الشات */}
               <div 
-                className="h-2 w-full transition-all duration-1000"
+                className="h-2 w-full transition-all duration-1000 shrink-0"
                 style={{ background: `linear-gradient(to right, transparent, rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.4), transparent)` }}
               />
             </div>
