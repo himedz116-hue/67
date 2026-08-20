@@ -461,10 +461,27 @@ export default function App() {
         {/* معلومات الاستريمر */}
         {streamerInfo && (
           <div 
-            className="bg-black/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-3xl flex flex-wrap items-center gap-8 mb-10 transform transition-all duration-700 animate-[fade-in-up_0.5s_ease-out]"
-            style={{ boxShadow: `0 8px 32px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.08)` }}
+            className="relative bg-black/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-3xl flex flex-wrap items-center gap-8 mb-10 transform transition-all duration-700 animate-[fade-in-up_0.5s_ease-out] overflow-hidden"
+            style={{ 
+              boxShadow: `0 8px 32px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.15)`
+            }}
           >
-            <div className="relative">
+            {/* صورة البانر في الخلفية */}
+            {(streamerInfo.banner_image?.url || streamerInfo.banner?.url || (typeof streamerInfo.banner_image === 'string' ? streamerInfo.banner_image : null)) && (
+              <div 
+                className="absolute inset-0 z-0 opacity-40 mix-blend-overlay transition-all duration-1000"
+                style={{
+                  backgroundImage: `linear-gradient(to right, #000 10%, transparent 50%, #000 90%), url(${streamerInfo.banner_image?.url || streamerInfo.banner?.url || streamerInfo.banner_image})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
+              />
+            )}
+            
+            {/* طبقة تظليل إضافية لضمان وضوح النص */}
+            <div className="absolute inset-0 z-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+
+            <div className="relative z-10">
               <div 
                 className="absolute inset-0 rounded-full blur-lg opacity-60 transition-all duration-1000"
                 style={{ background: `linear-gradient(to top right, ${c1}, ${c2})` }}
@@ -476,7 +493,7 @@ export default function App() {
               />
             </div>
             
-            <div className="flex-1 min-w-[250px]">
+            <div className="flex-1 min-w-[250px] relative z-10">
               <h2 className="text-3xl md:text-4xl font-black mb-3 text-white drop-shadow-md">
                 {streamerInfo.user?.username}
               </h2>
