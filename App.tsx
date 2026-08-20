@@ -630,11 +630,11 @@ export default function App() {
 
         {/* حاوية البث والشات */}
         {streamerInfo?.livestream && (
-          <div className="flex flex-col lg:flex-row gap-6 h-[70vh] min-h-[500px] mb-10 animate-[fade-in-up_0.8s_ease-out]">
+          <div className="flex flex-col lg:flex-row gap-4 md:gap-6 mb-10 animate-[fade-in-up_0.8s_ease-out] lg:h-[70vh] lg:min-h-[500px]">
             
             {/* البث المباشر */}
             <div 
-              className={`${dataSaverMode ? 'w-full' : 'flex-[3]'} bg-black rounded-3xl overflow-hidden border border-white/10 relative group transition-all duration-1000`}
+              className={`${dataSaverMode ? 'w-full' : 'lg:flex-[3]'} bg-black rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 relative group transition-all duration-1000 h-[250px] sm:h-[350px] md:h-[450px] lg:h-auto`}
               style={{ boxShadow: `0 0 30px rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, 0.08)` }}
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
@@ -647,7 +647,7 @@ export default function App() {
             
             {/* الشات (يختفي في وضع التوفير) */}
             {!dataSaverMode && (
-              <div className="flex-[1] bg-black/70 backdrop-blur-2xl rounded-3xl flex flex-col border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden relative min-w-0">
+              <div className="lg:flex-[1] bg-black/70 backdrop-blur-2xl rounded-2xl md:rounded-3xl flex flex-col border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden relative min-w-0 h-[350px] sm:h-[400px] lg:h-auto">
               {/* هيدر الشات */}
               <div 
                 className="p-4 text-center font-black border-b border-white/10 tracking-widest uppercase relative z-10 shadow-md transition-all duration-1000 shrink-0"
