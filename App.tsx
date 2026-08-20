@@ -405,9 +405,9 @@ export default function App() {
             className="text-4xl md:text-5xl font-black mt-8 mb-2 tracking-tight bg-clip-text text-transparent animate-pulse transition-all duration-1000"
             style={{ backgroundImage: `linear-gradient(to right, ${c1}, ${c2}, ${c1})` }}
           >
-            بوابة البث المباشر
+            HSG Kick Stream
           </h1>
-          <p className="text-gray-400 font-medium text-lg">تجربة مشاهدة خرافية لأي ستريمر على منصة Kick</p>
+          <p className="text-gray-400 font-medium text-lg">شاهد أي ستريمر على Kick مباشرةً مع شات حي وألوان ذكية 🎮</p>
         </div>
 
         {/* صندوق البحث */}
