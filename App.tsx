@@ -36,42 +36,48 @@ export default function App() {
     try {
       const apiUrl = `https://kick.com/api/v2/channels/${name}`;
       
-      // مصفوفة من البروكسيات لتسريع البحث وتجنب الحظر
       const proxies = [
-        `/api/kick?endpoint=${encodeURIComponent(apiUrl)}`, // Vercel API (الأسرع والأفضل)
-        `https://api.cors.lol/?url=${encodeURIComponent(apiUrl)}`,
-        `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`
+        `/api/kick?endpoint=${encodeURIComponent(apiUrl)}`, // Vercel API
+        `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(apiUrl)}`
       ];
 
-      let rawData = null;
-      let data = null;
-
-      // محاولة الاتصال بأسرع بروكسي متاح
-      for (const proxy of proxies) {
+      // إرسال الطلبات في نفس الوقت وأخذ أول استجابة صحيحة (لأقصى سرعة)
+      const fetchProxy = async (proxy: string) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 7000);
+        
         try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 ثواني كحد أقصى للانتظار
-          
           const response = await fetch(proxy, { signal: controller.signal });
           clearTimeout(timeoutId);
+          if (!response.ok) throw new Error('Bad response');
 
-          if (!response.ok) continue;
+          const rawData = await response.json();
+          let parsedData = rawData;
 
-          rawData = await response.json();
-          
           if (proxy.includes('allorigins')) {
-             if (rawData.contents) data = JSON.parse(rawData.contents);
-          } else {
-             data = rawData;
+             if (!rawData.contents) throw new Error('No contents');
+             parsedData = JSON.parse(rawData.contents);
           }
 
-          if (data) break; // نجحنا في جلب البيانات
-        } catch (e) {
-          continue; // فشل هذا البروكسي، جرب الذي يليه
+          // التأكد من أن البيانات هي فعلاً بيانات القناة وليست رسالة خطأ
+          if (parsedData && (parsedData.user || (parsedData.message && parsedData.message.includes('not found')))) {
+            return parsedData;
+          }
+          throw new Error('Invalid data format');
+        } catch (err) {
+          clearTimeout(timeoutId);
+          throw err;
         }
-      }
+      };
 
-      if (!data) throw new Error('فشل في الاتصال بخوادم Kick. المحاولة لاحقاً.');
+      let data: any = null;
+      
+      try {
+        data = await Promise.any(proxies.map(p => fetchProxy(p)));
+      } catch (e) {
+        throw new Error('فشل في الاتصال بخوادم Kick (ربما بسبب الحماية). المحاولة لاحقاً.');
+      }
 
       if (data.message && data.message.includes('not found')) {
         throw new Error('القناة غير موجودة أو الاسم غير صحيح.');
